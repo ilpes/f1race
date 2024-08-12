@@ -1,0 +1,18 @@
+services:
+    redis:
+        image: redis:7.4
+        ports:
+            - 6379:6379
+        networks:
+            - f1race
+
+    node:
+        image: node:20-bullseye-slim
+        volumes:
+            - ./:/var/www
+        working_dir: /var/www/
+        networks:
+            - f1race
+
+networks:
+    f1race:

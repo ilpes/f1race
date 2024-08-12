@@ -1,0 +1,24 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "license": "MIT",
+  "scripts": {
+    "dev": "nodemon index.ts"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^9.3.1",
+    "@fastify/session": "^10.9.0",
+    "@fastify/static": "^7.0.4",
+    "fastify": "^4.28.1",
+    "fastify-plugin": "^4.5.1",
+    "ioredis": "^5.4.1",
+    "redlock": "^5.0.0-beta.2",
+    "socket.io": "^4.7.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.1.0",
+    "nodemon": "^3.1.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4"
+  }
+}
