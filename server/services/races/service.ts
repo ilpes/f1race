@@ -1,7 +1,7 @@
 import Redis from "ioredis";
 import Redlock from "redlock";
 
-const MAX_DRIVER_PER_RACE = 2;
+export const MAX_DRIVER_PER_RACE = 2;
 
 class RacesService {
 
@@ -13,17 +13,35 @@ class RacesService {
         this.locker = locker;
     }
 
+    async hasStarted(raceId: string): Promise<boolean> {
+        const status = await this.redis.hget(`races:${raceId}`, 'status');
+        return status === 'started';
+    }
+
+    async start(raceId: string): Promise<boolean> {
+        await this.redis.hset(`races:${raceId}`, {
+            'status': 'started',
+        });
+    }
+
     async create(sessionId: string) {
+        const position = 1;
         const lastRaceId = crypto.randomUUID();
         await this.redis.set(`race`, lastRaceId);
-        await this.redis.sadd(`races:${lastRaceId}:drivers`, sessionId);
+        await this.redis.zadd(`races:${lastRaceId}:drivers`, position, sessionId);
         await this.redis.expire(`races.${lastRaceId}:drivers`, 86400);
         await this.redis.hset(`races:${lastRaceId}`, {
             'circuit': 'Monza',
+            'status': 'waiting',
         });
         await this.redis.expire(`races:${lastRaceId}`, 86400);
 
-        return lastRaceId;
+        return `${lastRaceId}-${position}`;
+    }
+
+    async position(raceId: string, sessionId: string): Promise<number|null> {
+        console.log(`Calculating position in race ${raceId} of ${sessionId}: `, await this.redis.zscore(`races:${raceId}:drivers`, sessionId));
+        return await this.redis.zscore(`races:${raceId}:drivers`, sessionId);
     }
 
     async current(): Promise<string | null> {
@@ -31,16 +49,25 @@ class RacesService {
     }
 
     async hasJoined(raceId: string, sessionId: string): Promise<boolean> {
-        let isDriver : number = await this.redis.sismember(`races:${raceId}:drivers`, sessionId);
-        return isDriver === 1;
+       return await this.position(raceId, sessionId) !== null;
+    }
+
+    async hasJoinedAtPosition(raceId: string, sessionId: string, position: number): Promise<boolean> {
+        return await this.position(raceId, sessionId) === position;
     }
 
     async driversCount(raceId: string): Promise<number> {
-        return await this.redis.scard(`races:${raceId}:drivers`);
+        return await this.redis.zcard(`races:${raceId}:drivers`);
     }
 
-    async join(raceId: string, sessionId: string): Promise<void> {
-        await this.redis.sadd(`races:${raceId}:drivers`, sessionId);
+    async join(raceId: string, sessionId: string, position: number): Promise<void> {
+        await this.redis.zadd(`races:${raceId}:drivers`, position, sessionId);
+    }
+
+    async canStart(raceId): Promise<boolean> {
+        const driversCount = await this.driversCount(raceId);
+
+        return driversCount === MAX_DRIVER_PER_RACE;
     }
 
     async race(sessionId: string) {
@@ -54,17 +81,20 @@ class RacesService {
                 return await this.create(sessionId);
             }
 
-            // Check if the user is already a driver of the current race...
-            let hasJoined : boolean = await this.hasJoined(lastRaceId, sessionId)
-            if (hasJoined) {
-                return lastRaceId;
+            // If position is null, he is not part of the race
+            let position = await this.position(lastRaceId, sessionId);
+            if (position !== null) {
+                // get the position
+                return `${lastRaceId}-${position}`;
             }
 
             // If not, let's add it to the current race
-            let lastRacePlayers : number = await this.driversCount(lastRaceId);
-            if (lastRacePlayers < MAX_DRIVER_PER_RACE) {
-                await this.join(lastRaceId, sessionId)
-                return lastRaceId;
+            let driversCount : number = await this.driversCount(lastRaceId);
+            if (driversCount < MAX_DRIVER_PER_RACE) {
+                const position = driversCount + 1;
+
+                await this.join(lastRaceId, sessionId, position)
+                return `${lastRaceId}-${position}`;
             }
 
             // Create a new race if the current one is full...

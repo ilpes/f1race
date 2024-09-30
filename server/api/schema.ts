@@ -6,8 +6,7 @@ const raceResponseSchema = {
         200: {
             type: 'object',
             properties: {
-                url: { type: 'string' },
-                session: {type: 'string'},
+                raceId: { type: 'string' },
             }
         }
     }

@@ -11,6 +11,8 @@ services:
         volumes:
             - ./:/var/www
         working_dir: /var/www/
+        depends_on:
+            - redis
         networks:
             - f1race
 

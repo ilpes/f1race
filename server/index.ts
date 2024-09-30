@@ -16,11 +16,15 @@ server.register(app, {
         host: 'redis',
     },
     session: {
-        secret: 'a secret with minimum length of 32 characters',
+        secret: 'foofoofoofoofoofoofoofoofoofoofoo',
         cookie: {
-            secure: false,
+            secure: 'auto'
         }
-    }
+    },
+    cookies: {
+        secure: 'auto',
+        secret: 'foobar'
+    },
 });
 
 
@@ -29,6 +33,8 @@ server.listen({port: 3000, host: '0.0.0.0'}, (error, address) => {
         console.error(error)
         process.exit(1)
     }
+
+
 
     console.log(`Server listening at ${address}`)
 })

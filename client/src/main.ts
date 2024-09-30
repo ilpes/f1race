@@ -1,26 +1,19 @@
 import './style.css';
-import typescriptLogo from './typescript.svg';
-import viteLogo from '/vite.svg';
-import { setupCounter } from './counter.ts';
-import {io} from "socket.io-client";
+import axios, {AxiosRequestConfig} from "axios";
 
-// document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-//   <div>
-//     <a href="https://vitejs.dev" target="_blank">
-//       <img src="${viteLogo}" class="logo" alt="Vite logo" />
-//     </a>
-//     <a href="https://www.typescriptlang.org/" target="_blank">
-//       <img src="${typescriptLogo}" class="logo vanilla" alt="TypeScript logo" />
-//     </a>
-//     <h1>Main</h1>
-//     <div class="card">
-//       <button id="counter" type="button"></button>
-//     </div>
-//     <p class="read-the-docs">
-//       Click on the Vite and TypeScript logos to learn more
-//     </p>
-//   </div>
-// `
-//
-// setupCounter(document.querySelector<HTMLButtonElement>('#counter')!);
-const socket = io("http://localhost:3000");
+const goToRace =  async () => {
+    const tokenResponse = await axios.get('/api/csrf-cookie');
+    const raceResponse = await axios.post(
+        '/api/races',
+        {},
+        {headers: {'x-csrf-token': tokenResponse.data.token}} as AxiosRequestConfig
+    );
+
+    window.location.href = `races/${raceResponse.data.raceId}`;
+};
+
+const warmUp = document.querySelector('#warm-up');
+warmUp.addEventListener('click', async (event: MouseEvent) => {
+    event.preventDefault();
+    await goToRace();
+})
