@@ -68,17 +68,6 @@ class RacesService {
             }
         };
     }
-    // async results(raceId: string) {
-    //     const drivers = await this.redis.zrange(`races:${raceId}:drivers`, 0, -1);
-    //     const results: Array<DriverResult> = [];
-    //
-    //     for (const sessionId of drivers) {
-    //         const driverResult: DriverResult = await this.driverResult(raceId, sessionId);
-    //         results.push(driverResult);
-    //     }
-    //
-    //     return results;
-    // }
     async create(sessionId) {
         const position = 1;
         const lastRaceId = crypto.randomUUID();
@@ -141,11 +130,16 @@ class RacesService {
         return position === null ? null : parseInt(position);
     }
     async current() {
-        return await this.redis.get(`race`);
+        return this.redis.get(`race`);
     }
     async isFinished(raceId) {
-        const status = await this.status(raceId);
-        return status === 'finished';
+        try {
+            const status = await this.status(raceId);
+            return status === 'finished';
+        }
+        catch (error) {
+            return false;
+        }
     }
     async hasJoinedAtPosition(raceId, sessionId, position) {
         const driverPosition = await this.position(raceId, sessionId);

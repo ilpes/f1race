@@ -209,7 +209,7 @@ class RacesService {
         try {
             const status: RaceStatus = await this.status(raceId);
             return status === 'finished';
-        } catch (error: Error) {
+        } catch (error: unknown) {
             return false;
         }
     }
