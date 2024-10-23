@@ -14,7 +14,7 @@ server.dev:
 	@docker compose run --rm -p 3000:3000 node bash -c "cd server && yarn dev"
 
 server.build:
-	@docker compose run --rm node bash -c "cd server && yarn build"
+	@docker compose run --rm -p 3000:3000 node bash -c "cd server && yarn serve"
 
 ssh: ## SSH into running web container
 	@docker compose run --rm node bash
