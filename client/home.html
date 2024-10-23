@@ -12,15 +12,15 @@
 </head>
 <body>
 
-    <main>
+    <main x-data="app">
         <h1>
             <img alt="F1 Race" src="/logo.svg"/>
         </h1>
 
-        <p>Lorem ipsum dolor <strong>sit amet</strong>, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+        <p><span x-text="driversCount" x-show="driversCount"></span> Lorem ipsum dolor <strong>sit amet</strong>, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
 
         <nav>
-            <button id="warm-up">
+            <button x-data="nav" id="warm-up" @click="warmUp">
                 <span>Warm-up</span>
             </button>
             <button id="race">
@@ -29,6 +29,6 @@
         </nav>
     </main>
 
-    <script type="module" src="/src/main.ts"></script>
+    <script type="module" src="/src/home/index.ts"></script>
 </body>
 </html>

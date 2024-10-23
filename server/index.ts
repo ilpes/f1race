@@ -27,14 +27,11 @@ server.register(app, {
     },
 });
 
-
 server.listen({port: 3000, host: '0.0.0.0'}, (error, address) => {
     if (error !== null) {
         console.error(error)
         process.exit(1)
     }
-
-
 
     console.log(`Server listening at ${address}`)
 })

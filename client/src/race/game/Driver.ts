@@ -1,17 +1,23 @@
-import {Layer, Path, Point} from "paper";
+import {Layer, Point, Path} from "paper";
+import {DriverPosition, DriverResult, DriverStatus, OnDriverPositionUpdate, OnLapCompleted} from "../../types.ts";
 
 const MAX_SPEED: number = 23;
 const FRICTION: number = 0.9;
 const ACCELERATION: number = 0.8;
 const SLIDING_FRICTION: number = 4.1;
 
-class Position {
+export class Position {
 
+    // @ts-ignore
     private trackPoint: Point;
+
+    // @ts-ignore
     private trackSpeed: Point;
     private trackDistance: number;
 
+    // @ts-ignore
     constructor(param: {point: Point, angle: number, length: number, distance?: number}) {
+
         this.trackPoint = param.point;
 
         this.trackSpeed = new Point(0, 0);
@@ -62,6 +68,7 @@ class Position {
         this.trackSpeed.length = newLength;
     }
 
+    // @ts-ignore
     setPoint(point: Point): void {
         this.trackPoint = point;
     }
@@ -71,44 +78,85 @@ class Position {
     }
 }
 
-export class Car {
+export class Driver {
+
+    private isMe: boolean;
+
+    // @ts-ignore
+    private status: DriverStatus;
 
     private image: HTMLImageElement;
-    private layer: Layer;
 
     // Track
+    // @ts-ignore
     private path: Path;
     private position: Position;
 
     // Crash
     private crashPosition: Position | null;
+
+    // @ts-ignore
     private crashPath: Path;
     private crashRotation: number;
 
     private isSpeedingUp: boolean = false;
     private onTrack: boolean = true;
+    private result: DriverResult | null = null;
 
-    constructor(container: HTMLElement, image: string, path: Path) {
+    private onPositionUpdate: OnDriverPositionUpdate;
+    private onLapCompleted: OnLapCompleted;
+
+    private laps: number = 0;
+
+    constructor(
+        container: HTMLElement,
+        image: string,
+
+        // @ts-ignore
+        path: Path,
+        isMe: boolean,
+        onPositionUpdate: OnDriverPositionUpdate,
+        onLapCompleted: OnLapCompleted,
+        initialPosition: DriverPosition | null = null,
+        result: DriverResult | null = null,
+    ) {
         this.path = path;
+        this.isMe = isMe;
+        this.result = result;
+        this.onPositionUpdate = onPositionUpdate;
+        this.onLapCompleted = onLapCompleted;
 
         this.addLayer();
         this.addImage(container, image);
-        this.setInitialPosition();
+        this.setInitialPosition(initialPosition);
         this.updateCarPosition(this.position);
     }
 
     private addLayer() {
-        this.layer = new Layer();
+        new Layer();
+    }
+
+    hasFinished(): boolean {
+        return this.result !== null;
     }
 
     private addImage(container: HTMLElement, image: string) {
         this.image = new Image()
         this.image.src = image;
         this.image.className = 'car';
+
+        if (!this.isMe) {
+            this.image.style.opacity = '.5';
+        }
+
         container.append(this.image);
     }
 
-    private updateCarPosition(position: Position | null) {
+    update(x: string, y: string, rotation: string) {
+        this.image.style['transform'] = 'translate3d(' + x + 'px, ' + y + 'px, 0px) rotate(' + rotation + 'deg)';
+    }
+
+    private updateCarPosition(position: Position | null, lapCompleted: boolean = false) {
 
         if (position === null) {
             return;
@@ -119,18 +167,48 @@ export class Car {
         let x = position.x().toFixed(20);
         let y = position.y().toFixed(20);
 
-        this.image.style['transform'] = 'translate3d(' + x + 'px, ' + y + 'px, 0px) rotate(' + rotation + 'deg)';
+        this.update(x, y, rotation);
+
+        if (!this.isMe) {
+            return;
+        }
+
+        this.onPositionUpdate({
+            x: position.x(),
+            y: position.y(),
+            rotation: position.angle(),
+            laps: this.laps,
+            distance: position.distance(),
+        });
+
+        if (!lapCompleted) {
+            return;
+        }
+
+        this.onLapCompleted(this.laps);
     }
 
+    setStatus(status: DriverStatus | undefined): void {
+        if (status === undefined) {
+            return;
+        }
 
+        this.status = status;
+    }
 
     private updatePosition(nextPosition: Position): void {
 
+        const nextDistance = this.position.distance() + nextPosition.length();
+        const lap = Math.floor(nextDistance / this.path.length);
+        const lapCompleted: boolean = this.laps < lap;
+
+        this.laps = Math.floor(nextDistance / this.path.length);
         this.position.setSpeed(nextPosition.angle(), nextPosition.length());
         this.position.setPoint(nextPosition.point());
-        this.position.setDistance(this.position.distance() + nextPosition.length());
+        this.position.setDistance(nextDistance);
 
-        this.updateCarPosition(this.position);
+        // Update car position and triggers the update event
+        this.updateCarPosition(this.position, lapCompleted);
     }
 
     private nextPosition(): Position {
@@ -208,15 +286,63 @@ export class Car {
         });
     }
 
-    private setInitialPosition(): void {
-        const position: Point = this.path.getPointAt(0);
-        const tangent = this.path.getTangentAt(0);
+    private setInitialPosition(initialPosition: DriverPosition | null): void {
+        if (initialPosition === null) {
+            // @ts-ignore
+            const position: Point = this.path.getPointAt(0);
 
+            // @ts-ignore
+            const tangent: Point = this.path.getTangentAt(0);
+
+            this.position = new Position({
+                point: position,
+                angle: tangent.angle,
+                length: 0,
+                distance: 0,
+            });
+
+            return;
+        }
+
+        const offset = initialPosition.distance % this.path.length
+
+        // @ts-ignore
+        const position: Point = this.path.getPointAt(offset);
+
+        // @ts-ignore
+        const tangent: Point = this.path.getTangentAt(offset);
+
+        this.laps = initialPosition.laps;
         this.position = new Position({
-          point: position,
-          angle: tangent.angle,
-          length: 0,
+            point: position,
+            angle: tangent.angle,
+            length: 0,
+            distance: initialPosition.distance
         });
+    }
+
+    setPosition(driverPosition: DriverPosition | null) {
+        if (driverPosition === null) {
+            return;
+        }
+
+        const offset = driverPosition.distance % this.path.length
+
+        // @ts-ignore
+        const position: Point = this.path.getPointAt(offset);
+
+        // @ts-ignore
+        const tangent: Point = this.path.getTangentAt(offset);
+
+        this.laps = driverPosition.laps;
+        this.position = new Position({
+            point: position,
+            angle: tangent.angle,
+            length: 0,
+            distance: driverPosition.distance
+        });
+
+        this.updateCarPosition(this.position);
     }
 
     speedUp() {
@@ -248,7 +374,7 @@ export class Car {
         let prevPointAngle = this.path.getTangentAt(offsetMid).angle;
         let direction = -1;
 
-        if (parseFloat(prevPointAngle) > parseFloat(pointAngle)) {
+        if (prevPointAngle > pointAngle) {
             direction = 1;
         }
 
@@ -258,14 +384,15 @@ export class Car {
         let l1 = this.drawLine(
             nextPosition.point(),
             nextPosition.point().add(normalAtPosition),
-            null, 0
+            null,
+            2
         );
 
         let l2 = this.drawLine(
             this.path.getPointAt(offsetPrev),
             this.path.getPointAt(offsetPrev).add(normalAtPoint),
             '#2895FF',
-            0
+            2
         );
 
         let intersection = l1.getIntersections(l2);
@@ -281,13 +408,14 @@ export class Car {
         let distance = intersection[0].point.getDistance(midpoint);
         const maxSpeed = Math.sqrt(distance * SLIDING_FRICTION);
 
-        if (maxSpeed <= 0) {
+        if (maxSpeed <= .05) {
             return false;
         }
 
         return nextPosition.length() > maxSpeed;
     }
 
+    // @ts-ignore
     private drawLine(p1: Point, p2: Point, color: string | null, size: number) {
         return new Path({
             segments: [p1, p2],
@@ -296,15 +424,16 @@ export class Car {
         });
     }
 
-
-
     private restartAfterCrash() {
-
         this.crashPath.remove();
         this.position.setSpeed(null, 0);
 
         this.updateCarPosition(this.position);
         this.onTrack = true;
+    }
+
+    stop() {
+        this.break();
     }
 
     move() {
@@ -336,4 +465,6 @@ export class Car {
 
         this.updateCrashPosition(nextCrashPosition);
     }
+
+
 }

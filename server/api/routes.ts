@@ -7,7 +7,7 @@ const ApiRoutes = async (fastify: FastifyInstance, options: FastifyPluginOptions
     fastify.get('/csrf-cookie', createToken);
 
     async function createToken (request: FastifyRequest, reply: FastifyReply) {
-          const token =  reply.generateCsrf();
+        const token =  reply.generateCsrf();
         return reply.send({token});
     }
 
