@@ -105,7 +105,7 @@ const App = ()  => <AppInterface>({
         },
 
         initSocket(raceId: string, position: number) {
-            this.socket = io("/races", {autoConnect: false});
+            this.socket = io("/races", {autoConnect: false, transports: ["websocket"]});
             this.socket.auth = {raceId, position};
             this.socket.connect();
 
