@@ -5,29 +5,30 @@ const server: FastifyInstance = fastify({
     logger: true
 });
 
+console.log(process.env);
+
 server.register(app, {
     io: {
-        cors: {
-            origin: "http://localhost:5173",
-            methods: ["GET", "POST"],
-        }
     },
     redis: {
-        host: 'redis',
+        host: process.env.REDIS_HOST || '127.0.0.1',
     },
     session: {
-        secret: 'foofoofoofoofoofoofoofoofoofoofoo',
+        secret: process.env.SESSION_SECRET,
         cookie: {
             secure: 'auto'
         }
     },
     cookies: {
         secure: 'auto',
-        secret: 'foobar'
+        secret: process.env.COOKIE_SECRET,
     },
 });
 
-server.listen({port: 3000, host: '0.0.0.0'}, (error, address) => {
+const port = process.env.PORT || 3000;
+const host = process.env.HOST || '127.0.0.1';
+
+server.listen({port: port, host: host}, (error, address) => {
     if (error !== null) {
         console.error(error)
         process.exit(1)
