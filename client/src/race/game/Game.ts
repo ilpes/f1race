@@ -5,6 +5,7 @@ import {throttle} from "lodash";
 import {DriverPosition, DriverData, RaceStatus, MouseEventFunction} from "../../types.ts";
 
 const LAPS: number = 3;
+const TICK_INTERVAL: number = 16;
 
 export class Game {
     // @ts-ignore
@@ -68,7 +69,7 @@ export class Game {
 
     private throttleUpdate = throttle((data: DriverPosition) => {
         this.onUpdate(data);
-    }, 15); // ~60fps
+    }, TICK_INTERVAL); // ~60fps
 
     onPositionUpdate(data: DriverPosition) {
         this.throttleUpdate(data)
