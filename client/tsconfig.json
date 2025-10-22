@@ -23,6 +23,9 @@
     /* Custom rules */
     "strictNullChecks": false,
     "noImplicitAny": false,
+
+    /* Source map */
+    "sourceMap": true
   },
   "include": ["src"]
 }

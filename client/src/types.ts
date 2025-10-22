@@ -21,6 +21,8 @@ export type MouseEventFunction = (this: HTMLElement, ev: MouseEvent) => void;
 
 export type RaceStatus = 'waiting' | 'starting' | 'started' | 'finished';
 
+export type DriverType = 'auto' | 'manual';
+
 export type DriverResult = {
     position: number,
     time: number,

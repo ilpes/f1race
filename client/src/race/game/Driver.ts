@@ -1,9 +1,16 @@
 import {Layer, Point, Path} from "paper";
-import {DriverPosition, DriverResult, DriverStatus, OnDriverPositionUpdate, OnLapCompleted} from "../../types.ts";
+import {
+    DriverPosition,
+    DriverResult,
+    DriverStatus,
+    DriverType,
+    OnDriverPositionUpdate,
+    OnLapCompleted
+} from "../../types.ts";
 
-const MAX_SPEED: number = 23;
+const MAX_SPEED: number = 25;
 const FRICTION: number = 0.9;
-const ACCELERATION: number = 0.8;
+const ACCELERATION: number = 0.9;
 const SLIDING_FRICTION: number = 4.1;
 
 export class Position {
@@ -80,51 +87,52 @@ export class Position {
 
 export class Driver {
 
-    private isMe: boolean;
-
     // @ts-ignore
-    private status: DriverStatus;
+    protected status: DriverStatus;
 
-    private image: HTMLImageElement;
+    protected image: HTMLImageElement;
 
     // Track
     // @ts-ignore
-    private path: Path;
-    private position: Position;
+    protected path: Path;
+    protected position: Position;
 
     // Crash
-    private crashPosition: Position | null;
+    protected crashPosition: Position | null;
 
     // @ts-ignore
-    private crashPath: Path;
-    private crashRotation: number;
+    protected crashPath: Path;
+    protected crashRotation: number;
 
-    private isSpeedingUp: boolean = false;
-    private onTrack: boolean = true;
-    private result: DriverResult | null = null;
+    protected isSpeedingUp: boolean = false;
+    protected onTrack: boolean = true;
+    protected result: DriverResult | null = null;
 
-    private onPositionUpdate: OnDriverPositionUpdate;
-    private onLapCompleted: OnLapCompleted;
+    protected readonly onLapCompleted: OnLapCompleted;
+    protected readonly onPositionUpdate: OnDriverPositionUpdate;
 
-    private laps: number = 0;
+    protected laps: number = 0;
+    protected number: number = 0;
+    protected type: DriverType;
 
     constructor(
         container: HTMLElement,
         image: string,
-
+        number: number,
+        type: DriverType,
         // @ts-ignore
         path: Path,
-        isMe: boolean,
-        onPositionUpdate: OnDriverPositionUpdate,
-        onLapCompleted: OnLapCompleted,
         initialPosition: DriverPosition | null = null,
         result: DriverResult | null = null,
+
+        //onPositionUpdate: OnDriverPositionUpdate,
+        //onLapCompleted: OnLapCompleted,
     ) {
         this.path = path;
-        this.isMe = isMe;
         this.result = result;
-        this.onPositionUpdate = onPositionUpdate;
-        this.onLapCompleted = onLapCompleted;
+        this.number = number;
+        this.type = type;
+        //this.onLapCompleted = onLapCompleted;
 
         this.addLayer();
         this.addImage(container, image);
@@ -136,17 +144,18 @@ export class Driver {
         new Layer();
     }
 
-    hasFinished(): boolean {
-        return this.result !== null;
-    }
+    // hasFinished(): boolean {
+    //     return this.result !== null;
+    // }
 
-    private addImage(container: HTMLElement, image: string) {
+    protected addImage(container: HTMLElement, image: string) {
         this.image = new Image()
         this.image.src = image;
         this.image.className = 'car';
+        this.image.style.opacity = '.5';
 
-        if (!this.isMe) {
-            this.image.style.opacity = '.5';
+        if (this.type === 'manual') {
+            this.image.style.opacity = '1';
         }
 
         container.append(this.image);
@@ -156,7 +165,7 @@ export class Driver {
         this.image.style['transform'] = 'translate3d(' + x + 'px, ' + y + 'px, 0px) rotate(' + rotation + 'deg)';
     }
 
-    private updateCarPosition(position: Position | null, lapCompleted: boolean = false) {
+    protected updateCarPosition(position: Position | null, _lapCompleted: boolean = false) {
 
         if (position === null) {
             return;
@@ -169,23 +178,20 @@ export class Driver {
 
         this.update(x, y, rotation);
 
-        if (!this.isMe) {
-            return;
-        }
-
-        this.onPositionUpdate({
-            x: position.x(),
-            y: position.y(),
-            rotation: position.angle(),
-            laps: this.laps,
-            distance: position.distance(),
-        });
-
-        if (!lapCompleted) {
-            return;
-        }
-
-        this.onLapCompleted(this.laps);
+        // //
+        // this.onPositionUpdate({
+        //     x: position.x(),
+        //     y: position.y(),
+        //     rotation: position.angle(),
+        //     laps: this.laps,
+        //     distance: position.distance(),
+        // });
+        //
+        // if (!lapCompleted) {
+        //     return;
+        // }
+        //
+        // this.onLapCompleted(this.laps);
     }
 
     setStatus(status: DriverStatus | undefined): void {
@@ -468,3 +474,50 @@ export class Driver {
 
 
 }
+//
+// export class CurrentDriver extends Driver {
+//
+//     private readonly onLapCompleted: OnLapCompleted;
+//     private readonly onPositionUpdate: OnDriverPositionUpdate;
+//
+//     constructor(
+//         container: HTMLElement,
+//         image: string,
+//         // @ts-ignore
+//         path: Path,
+//         initialPosition: DriverPosition | null = null,
+//         result: DriverResult | null = null,
+//
+//         onPositionUpdate: OnDriverPositionUpdate,
+//         onLapCompleted: OnLapCompleted,
+//     ) {
+//         super(container, image, path, initialPosition, result);
+//
+//         this.onPositionUpdate = onPositionUpdate;
+//         this.onLapCompleted = onLapCompleted;
+//     }
+//
+//     protected addImage(container: HTMLElement, image: string) {
+//        super.addImage(container, image);
+//
+//        this.image.style.opacity = '1';
+//     }
+//
+//     protected updateCarPosition(position: Position | null, lapCompleted: boolean = false) {
+//         super.updateCarPosition(position, lapCompleted);
+//
+//         this.onPositionUpdate({
+//             x: position.x(),
+//             y: position.y(),
+//             rotation: position.angle(),
+//             laps: this.laps,
+//             distance: position.distance(),
+//         });
+//
+//         if (!lapCompleted) {
+//             return;
+//         }
+//
+//         this.onLapCompleted(this.laps);
+//     }
+// }

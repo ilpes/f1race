@@ -8,6 +8,7 @@ export default defineConfig({
                 index: resolve(__dirname, 'home.html'),
                 race: resolve(__dirname, 'race.html')
             }
-        }
+        },
+        sourcemap: true,
     }
 });

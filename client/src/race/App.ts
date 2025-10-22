@@ -1,122 +1,163 @@
 import {io, Socket} from "socket.io-client";
-import {DriverData, DriverPosition, RaceStatus} from "../types.ts";
+import {DriverData, RaceStatus} from "../types.ts";
 import * as paper from "paper";
 import {Game} from "./game/Game.ts";
+import {PathExporter} from "./game/PathExporter.ts";
 
 type AppInterface = {
     game: Game,
-    raceId:string,
-    position:number,
-    socket:Socket,
+    raceId: string,
+    position: number,
+    socket: Socket,
     init: Function,
     initGame: Function,
     initSocket: Function,
-    onUpdate: Function,
-    onFinish: Function,
-    onInitialize: Function,
-    onDriverUpdate: Function,
+    //onUpdate: Function,
+    //onFinish: Function,
+    //onInitialize: Function,
+    //onDriverUpdate: Function,
     onDriverConnected: Function,
-    onDriverDisconnected: Function,
+    //onDriverDisconnected: Function,
     onStarting: Function,
     onStart: Function,
-    onFinished: Function,
+    onSpeedUp: Function,
+    onBrake: Function,
+    onDriverSpeedUp: Function,
+    onDriverBrake: Function,
+    //onFinished: Function,
 }
 
-const App = ()  => <AppInterface>({
-        raceId: null,
-        position: null,
-        socket: null,
-        game: null,
+const App = () => <AppInterface>({
+    raceId: null,
+    position: null,
+    socket: null,
+    game: null,
 
-        init() {
-            // Get race id and position from the URL
-            const raceIdAndPosition = window.location.pathname.replace('/races/', '');
-            const lastIndex = raceIdAndPosition.lastIndexOf('-');
-            const raceId = raceIdAndPosition.slice(0, lastIndex);
-            const position = parseInt(raceIdAndPosition.slice(lastIndex + 1));
+    downloadTrackPath() {
+        const trackPath = (new PathExporter()).extract(this.game?.getTrackPath(), 2000);
+        const blob = new Blob([trackPath], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'track.json';
+        a.click();
+        URL.revokeObjectURL(url);
+    },
 
-            console.log(`Initialize race #${raceId} for driver #${position}`);
+    init() {
+        // Get race id and position from the URL
+        const raceIdAndPosition = window.location.pathname.replace('/races/', '');
+        const lastIndex = raceIdAndPosition.lastIndexOf('-');
+        const raceId = raceIdAndPosition.slice(0, lastIndex);
+        const driverNumber = parseInt(raceIdAndPosition.slice(lastIndex + 1));
 
-            this.initSocket(raceId, position);
-            this.initGame(raceId, position);
-        },
+        console.log(`Initialize race #${raceId} for driver #${driverNumber}`);
 
-        onFinish() {
-           this.socket.emit('finish');
-        },
+        this.initSocket(raceId, driverNumber);
+        this.initGame(raceId, driverNumber);
+    },
 
-        onUpdate(data: DriverPosition) {
-            this.socket.emit('update', data);
-        },
+    // onFinish() {
+    //    this.socket.emit('finish');
+    // },
 
-        initGame(raceId: string, position: number) {
-            // @ts-ignore
-            const container : HTMLElement = this.$refs.container;
+    // onUpdate(data: DriverPosition) {
+    //     this.socket.emit('update', data);
+    // },
 
-            // @ts-ignore
-            const canvas= this.$refs.track as HTMLCanvasElement;
+    initGame(raceId: string, driverNumber: number) {
+        // @ts-ignore
+        const container: HTMLElement = this.$refs.container;
 
-            // @ts-ignore
-            const trackSvg: SVGElement = this.$refs.monza as SVGElement;
+        // @ts-ignore
+        const canvas = this.$refs.track as HTMLCanvasElement;
 
-            paper.setup(canvas);
+        // @ts-ignore
+        const trackSvg: SVGElement = this.$refs.monza as SVGElement;
 
-            this.game = new Game({
-                raceId: raceId,
-                position: position,
-                document: document,
-                container: container,
-                trackSvg: trackSvg,
-                onUpdate: (data: DriverPosition) => this.onUpdate(data),
-                onFinish: () => this.onFinish(),
-            });
-        },
+        paper.setup(canvas);
 
-        onInitialize(drivers: Array<DriverData>, status: RaceStatus) {
-            console.log(`Initialize ${status} game with drivers...`, drivers);
-            this.game.initialize(drivers, status);
-        },
+        this.game = new Game({
+            raceId: raceId,
+            driverNumber: driverNumber,
+            document: document,
+            container: container,
+            trackSvg: trackSvg,
+            onSpeedUp: (driverNumber: number) => this.onSpeedUp(driverNumber),
+            onBrake: (driverNumber: number) => this.onBrake(driverNumber),
+            // onUpdate: (data: DriverPosition) => this.onUpdate(data),
+            //onFinish: () => this.onFinish(),
+        });
+    },
 
-        onDriverUpdate(data: DriverData) {
-            this.game.update(data.position, data.data);
-        },
+    onSpeedUp(driverNumber: number) {
+        this.socket.emit('speed-up', driverNumber);
+    },
 
-        onDriverConnected(data: DriverData) {
-            console.log(`Driver #${data.position} connected!`);
-            this.game.driverJoined(data.position, data.data);
-        },
+    onBrake(driverNumber: number) {
+        this.socket.emit('brake', driverNumber);
+    },
 
-        onDriverDisconnected(data: DriverData) {
-            console.log(`Driver #${data.position} disconnected!`);
-            this.game.driverLeft(data.position);
-        },
+    // onInitialize(drivers: Array<DriverData>, status: RaceStatus) {
+    //     console.log(`Initialize ${status} game with drivers...`, drivers);
+    //     this.game.initialize(drivers, status);
+    // },
 
-        onStarting() {
-            console.log('Starting...');
-        },
+    // onDriverUpdate(data: DriverData) {
+    //     console.log(data);
+    //     //this.game.update(data.position, data.data);
+    // },
 
-        onStart() {
-            console.log('Start...');
-            this.game.start();
-        },
+    onDriverConnected(driverNumber: number, drivers: Array<DriverData>, status: RaceStatus) {
+       // console.log(`Driver connected: ${driverNumber}`, `Race status: ${status}`, `Drivers `, drivers);
+        //console.log(`Driver #${data.position} connected!`);
+        this.game.driverJoined(driverNumber, drivers, status);
+    },
 
-        onFinished(data: DriverData) {
-            console.log('Finished...', data);
-        },
+    // onDriverDisconnected(data: DriverData) {
+    //     //console.log(`Driver #${data.position} disconnected!`);
+    //     //this.game.driverLeft(data.position);
+    // },
 
-        initSocket(raceId: string, position: number) {
-            this.socket = io("/races", {autoConnect: false, transports: ["websocket"]});
-            this.socket.auth = {raceId, position};
-            this.socket.connect();
+    onDriverSpeedUp(driverNumber: number) {
+        console.log(`Driver ${driverNumber} sped up...`);
+        this.game.driverSpedUp(driverNumber);
+    },
 
-            this.socket.on('initialize', (drivers: Array<DriverData>, status: RaceStatus) => this.onInitialize(drivers, status));
-            this.socket.on('driver-update', (data: DriverData) => this.onDriverUpdate(data));
-            this.socket.on('driver-connected', (data: DriverData) => this.onDriverConnected(data));
-            this.socket.on('driver-disconnected', (data: DriverData) => this.onDriverDisconnected(data));
-            this.socket.on('starting', () => this.onStarting());
-            this.socket.on('start', () => this.onStart());
-            this.socket.on('finished', (data: DriverData) => this.onFinished(data));
-        },
+    onDriverBrake(driverNumber: number) {
+        console.log(`Driver ${driverNumber} braked...`);
+        this.game.driverBraked(driverNumber);
+    },
+
+    onStarting() {
+        console.log('Starting...');
+    },
+
+    onStart() {
+        //console.log('Start...');
+        //this.game.start();
+    },
+
+    // onFinished(data: DriverData) {
+    //     console.log('Finished...', data);
+    // },
+
+    initSocket(raceId: string, driverNumber: number) {
+        console.log(`Initialize socket for driver #${driverNumber}`);
+
+        this.socket = io("/races", {autoConnect: false, transports: ["websocket"]});
+        this.socket.auth = {raceId, position: driverNumber};
+        this.socket.connect();
+
+        // this.socket.on('initialize', (drivers: Array<DriverData>, status: RaceStatus) => this.onInitialize(drivers, status));
+        // this.socket.on('driver-update', (data: DriverData) => this.onDriverUpdate(data));
+        this.socket.on('driver-connected', (driverNumber: number, drivers: DriverData[], status: RaceStatus) => this.onDriverConnected(driverNumber, drivers, status));
+        this.socket.on('driver-sped-up', (driverNumber: number) => this.onDriverSpeedUp(driverNumber));
+        this.socket.on('driver-braked', (driverNumber: number) => this.onDriverBrake(driverNumber));
+        this.socket.on('starting', () => this.onStarting());
+        this.socket.on('start', () => this.onStart());
+        // this.socket.on('finished', (data: DriverData) => this.onFinished(data));
+    },
 });
 
 export default App;

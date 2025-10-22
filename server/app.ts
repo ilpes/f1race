@@ -69,6 +69,7 @@ const io = fp(async (fastify: FastifyInstance, options: FastifyPluginOptions) =>
             });
 
             const {raceId, position} = socket.handshake.auth;
+            console.log(`sessionId: ${sessionId}`, `position: ${position}`, `raceId: ${raceId}`);
 
             const hasJoined = await fastify.racesService.hasJoinedAtPosition(raceId, sessionId, position);
             if (!hasJoined) {
@@ -85,37 +86,44 @@ const io = fp(async (fastify: FastifyInstance, options: FastifyPluginOptions) =>
 
         racesNamespace.on("connection", async (socket: any) => {
 
-            const onDriverDisconnected = async (reason: any) => {
-                updateDriversCount();
-
-                // Update the driver's status...
-                await fastify.racesService.disconnect(socket.raceId, socket.sessionId)
-
-                // Notify the room about the disconnection...
-                socket
-                    .broadcast
-                    .to(socket.raceId)
-                    .emit("driver-disconnected", {position: socket.position});
+            const onDriverSpeedUp = async (driverNumber: number) => {
+                racesNamespace.in(socket.raceId).emit('driver-sped-up', driverNumber);
             }
 
-            const onFinish = async () => {
-                // @todo: eventually notify other clients...
-
-                const result = await fastify.racesService.finish(socket.raceId, socket.sessionId);
-                socket.emit('finished', result);
+            const onDriverBrake = async (driverNumber: number) => {
+                racesNamespace.in(socket.raceId).emit('driver-braked', driverNumber);
             }
+            // const onDriverDisconnected = async (reason: any) => {
+            //     updateDriversCount();
+            //
+            //     // Update the driver's status...
+            //     await fastify.racesService.disconnect(socket.raceId, socket.sessionId)
+            //
+            //     // Notify the room about the disconnection...
+            //     socket
+            //         .broadcast
+            //         .to(socket.raceId)
+            //         .emit("driver-disconnected", {position: socket.position});
+            // }
+            //
+            // const onFinish = async () => {
+            //     // @todo: eventually notify other clients...
+            //
+            //     const result = await fastify.racesService.finish(socket.raceId, socket.sessionId);
+            //     socket.emit('finished', result);
+            // }
 
-            const onDriverUpdate = async (data: DriverPosition) => {
-                socket
-                    .broadcast
-                    .to(socket.raceId)
-                    .emit("driver-update", {
-                        position: socket.position,
-                        data: data,
-                    });
-
-                await fastify.racesService.update(socket.raceId, socket.sessionId, data);
-            }
+            // const onDriverUpdate = async (data: DriverPosition) => {
+            //     socket
+            //         .broadcast
+            //         .to(socket.raceId)
+            //         .emit("driver-update", {
+            //             position: socket.position,
+            //             data: data,
+            //         });
+            //
+            //     await fastify.racesService.update(socket.raceId, socket.sessionId, data);
+            // }
 
             const onDriverConnected = async () => {
                 const shouldStart: boolean = await fastify.racesService.shouldStart(socket.raceId);
@@ -151,27 +159,33 @@ const io = fp(async (fastify: FastifyInstance, options: FastifyPluginOptions) =>
                 // Emit the drivers' list (position and status)
                 const drivers = await fastify.racesService.driversList(socket.raceId);
                 const status: RaceStatus = await fastify.racesService.status(socket.raceId);
-                socket.emit('initialize', drivers, status);
+                //socket.emit('initialize', drivers, status);
 
-                // Upon update and disconnection
-                socket.on('update',  onDriverUpdate);
-                socket.on('finish', onFinish);
-                socket.on("disconnect",  onDriverDisconnected);
-            }
+                socket.on('speed-up',  onDriverSpeedUp);
+                socket.on('brake', onDriverBrake);
+                //socket.on("disconnect",  onDriverDisconnected);
 
-            const connectDriver = async ()  => {
+                racesNamespace.in(socket.raceId).emit('driver-connected', socket.position, drivers, status, onDriverConnected);
+
+                // Update drivers' count
                 updateDriversCount();
-
-                const driverData = await fastify.racesService.driverData(socket.raceId, socket.sessionId);
-
-                socket
-                    .broadcast
-                    .to(socket.raceId)
-                    .emit("driver-connected", driverData, onDriverConnected);
             }
+
+            // const connectDriver = async ()  => {
+            //     updateDriversCount();
+            //
+            //     const driverData = await fastify.racesService.driverData(socket.raceId, socket.sessionId);
+            //
+            //     racesNamespace.in(socket.raceId).emit('driver-connected', driverData, onDriverConnected);
+            //
+            //     // socket
+            //     //     .broadcast
+            //     //     .to(socket.raceId)
+            //     //     .emit("driver-connected", driverData, onDriverConnected);
+            // }
 
             await initialize();
-            await connectDriver();
+            //await connectDriver();
         });
     }
 

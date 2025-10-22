@@ -2,7 +2,7 @@ import axios, {AxiosRequestConfig} from "axios";
 
 const Nav = () => {
     return {
-        async warmUp() {
+        async race() {
             const tokenResponse = await axios.get('/api/csrf-cookie');
             const raceResponse = await axios.post(
                 '/api/races',
