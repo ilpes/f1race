@@ -11,14 +11,12 @@ import {fastifyCookie} from "@fastify/cookie";
 import {fastifySession} from "@fastify/session";
 import {fastifyStatic} from "@fastify/static";
 import {fastifyCsrfProtection} from "@fastify/csrf-protection";
-import RacesService, {
-    DriverData,
-    DriverPosition,
-    MAX_DRIVER_PER_RACE,
-    RaceStatus
-} from "./services/races/service";
+import RacesService from "./game/RaceService";
 import ApiRoutes from "./api/routes";
 import WebRoutes from "./web/routes";
+import * as fs from "node:fs";
+import {MAX_DRIVER_PER_RACE, RaceManager, RaceState} from "./game/RaceManager";
+import {GameState, PlayerInput} from "./game/GameEngine";
 
 declare module 'fastify' {
     export interface FastifyInstance {
@@ -26,6 +24,7 @@ declare module 'fastify' {
         redis: Redis,
         locker: Redlock,
         racesService: RacesService,
+        raceManager: RaceManager,
     }
 }
 
@@ -38,7 +37,6 @@ declare module 'socket.io' {
 }
 
 const io = fp(async (fastify: FastifyInstance, options: FastifyPluginOptions) => {
-
 
     const connect = () => {
 
@@ -69,8 +67,6 @@ const io = fp(async (fastify: FastifyInstance, options: FastifyPluginOptions) =>
             });
 
             const {raceId, position} = socket.handshake.auth;
-            console.log(`sessionId: ${sessionId}`, `position: ${position}`, `raceId: ${raceId}`);
-
             const hasJoined = await fastify.racesService.hasJoinedAtPosition(raceId, sessionId, position);
             if (!hasJoined) {
                 next(new Error('Cannot enter this race'));
@@ -86,106 +82,88 @@ const io = fp(async (fastify: FastifyInstance, options: FastifyPluginOptions) =>
 
         racesNamespace.on("connection", async (socket: any) => {
 
-            const onDriverSpeedUp = async (driverNumber: number) => {
-                racesNamespace.in(socket.raceId).emit('driver-sped-up', driverNumber);
+            const onPlayerInput = async (input: PlayerInput) => {
+                fastify.raceManager.queueInput(socket.raceId, input);
             }
 
-            const onDriverBrake = async (driverNumber: number) => {
-                racesNamespace.in(socket.raceId).emit('driver-braked', driverNumber);
+            const onRaceUpdate = (raceId: string, gameState: GameState) => {
+                racesNamespace.in(raceId).emit('game-state', gameState);
             }
-            // const onDriverDisconnected = async (reason: any) => {
-            //     updateDriversCount();
-            //
-            //     // Update the driver's status...
-            //     await fastify.racesService.disconnect(socket.raceId, socket.sessionId)
-            //
-            //     // Notify the room about the disconnection...
-            //     socket
-            //         .broadcast
-            //         .to(socket.raceId)
-            //         .emit("driver-disconnected", {position: socket.position});
-            // }
-            //
-            // const onFinish = async () => {
-            //     // @todo: eventually notify other clients...
-            //
-            //     const result = await fastify.racesService.finish(socket.raceId, socket.sessionId);
-            //     socket.emit('finished', result);
-            // }
 
-            // const onDriverUpdate = async (data: DriverPosition) => {
-            //     socket
-            //         .broadcast
-            //         .to(socket.raceId)
-            //         .emit("driver-update", {
-            //             position: socket.position,
-            //             data: data,
-            //         });
-            //
-            //     await fastify.racesService.update(socket.raceId, socket.sessionId, data);
-            // }
+            const onRaceFinished = (raceId: string, time: number) => {
+                fastify.racesService.finish(raceId, time);
+                racesNamespace.in(socket.raceId).emit('finished');
+            }
 
-            const onDriverConnected = async () => {
-                const shouldStart: boolean = await fastify.racesService.shouldStart(socket.raceId);
+            const startRace = async (raceId: string) => {
 
-                if (!shouldStart) {
+                fastify.raceManager.starting(raceId);
+                racesNamespace.in(socket.raceId).emit('starting');
+
+                setTimeout(async () => {
+                    fastify.raceManager.startRace(raceId);
+                    await fastify.racesService.start(raceId, Number(fastify.raceManager.getStartedAt(raceId)));
+
+                    racesNamespace.in(socket.raceId).emit('start');
+                }, 2000);
+            }
+
+            const shouldStartRace = (raceState: RaceState) => {
+                return raceState.status === 'waiting' && raceState.driverCount === MAX_DRIVER_PER_RACE
+            }
+
+            const connectDriver = (position: number, state: RaceState) => {
+                racesNamespace.in(socket.raceId).emit('driver-connected', position, state);
+            }
+
+            const disconnectDriver = (position: number) => {
+                racesNamespace.in(socket.raceId).emit('driver-disconnected', position);
+            }
+
+            const initialize = async () => {
+                // Join the race and listen for events
+                socket.join(socket.raceId);
+                socket.on('input', onPlayerInput);
+                socket.on('disconnect', onDisconnect);
+
+                // Update players count
+                updateDriversCount();
+
+                // Get or create race in game engine
+                let race = fastify.raceManager.getRace(socket.raceId);
+                if (!race) {
+                    fastify.raceManager.createRace(
+                        socket.raceId,
+                        MAX_DRIVER_PER_RACE,
+                        onRaceUpdate,
+                        onRaceFinished,
+                    );
+                }
+
+                fastify.raceManager.addDriverToRace(socket.raceId, socket.position);
+
+                const raceState = fastify.raceManager.raceState(socket.raceId);
+                if (!raceState) {
+                    console.log('Something went wrong');
                     return;
                 }
 
-                // Starting...
-                await fastify.racesService.starting(socket.raceId);
-                racesNamespace.in(socket.raceId).emit('starting');
+                connectDriver(socket.position, raceState);
 
-                // And then start...
-                setTimeout(async () => {
-                    const canStart: boolean = await fastify.racesService.canStart(socket.raceId);
-
-                    if (!canStart) {
-                        return;
-                    }
-
-                    await fastify.racesService.start(socket.raceId);
-                    racesNamespace.in(socket.raceId).emit('start');
-                }, 5000); // Starts after 5 seconds
-            };
-
-            const initialize = async () => {
-                // Join the race room
-                socket.join(socket.raceId);
-
-                // Update the driver's status
-                await fastify.racesService.connect(socket.raceId, socket.sessionId);
-
-                // Emit the drivers' list (position and status)
-                const drivers = await fastify.racesService.driversList(socket.raceId);
-                const status: RaceStatus = await fastify.racesService.status(socket.raceId);
-                //socket.emit('initialize', drivers, status);
-
-                socket.on('speed-up',  onDriverSpeedUp);
-                socket.on('brake', onDriverBrake);
-                //socket.on("disconnect",  onDriverDisconnected);
-
-                racesNamespace.in(socket.raceId).emit('driver-connected', socket.position, drivers, status, onDriverConnected);
-
-                // Update drivers' count
-                updateDriversCount();
+                // All the players are there, let's start
+                if (shouldStartRace(raceState)) {
+                    await startRace(socket.raceId);
+                }
             }
 
-            // const connectDriver = async ()  => {
-            //     updateDriversCount();
-            //
-            //     const driverData = await fastify.racesService.driverData(socket.raceId, socket.sessionId);
-            //
-            //     racesNamespace.in(socket.raceId).emit('driver-connected', driverData, onDriverConnected);
-            //
-            //     // socket
-            //     //     .broadcast
-            //     //     .to(socket.raceId)
-            //     //     .emit("driver-connected", driverData, onDriverConnected);
-            // }
+            const onDisconnect = async (reason: any) => {
+                updateDriversCount();
+
+                fastify.raceManager.disconnectDriverFromRace(socket.raceId, socket.position);
+                disconnectDriver(socket.position);
+            }
 
             await initialize();
-            //await connectDriver();
         });
     }
 
@@ -216,8 +194,17 @@ const redis = fp(async (fastify: FastifyInstance, options: FastifyPluginOptions)
 });
 
 const decorators = fp(async (fastify: FastifyInstance, options: FastifyPluginOptions) => {
+    const trackDataPath = path.join(__dirname, 'game/tracks', 'track.json');
+    const trackData = JSON.parse(fs.readFileSync(trackDataPath, 'utf-8'));
+
+    const raceManager = new RaceManager(trackData);
     const racesService = new RacesService(fastify.redis, fastify.locker)
     fastify.decorate('racesService', racesService)
+    fastify.decorate('raceManager', raceManager);
+
+    fastify.addHook('onClose', () => {
+        fastify.raceManager.shutdown();
+    });
 });
 
 
