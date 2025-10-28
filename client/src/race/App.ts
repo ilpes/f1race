@@ -74,6 +74,8 @@ const App = () => <AppInterface>({
             onSpeedUp: (driverNumber: number, sequence: number) => this.onSpeedUp(driverNumber, sequence),
             onBrake: (driverNumber: number, sequence: number) => this.onBrake(driverNumber, sequence),
         });
+
+        trackSvg.remove();
     },
 
     onSpeedUp(driverNumber: number, sequence: number) {
