@@ -2,6 +2,8 @@ import {Track} from "./Track.ts";
 import {RaceStatus} from "../../types.ts";
 import {Driver} from "./Driver.ts";
 import CarImage from "./assets/car.png";
+// @ts-ignore
+import {Path} from "paper";
 
 
 export interface RaceState {
@@ -58,6 +60,8 @@ export class Game {
     private renderDelay: number = 100; // 100ms buffer for interpolation
     private localInputSequence: number = 0;
 
+    private track: Track;
+
     constructor(options: {
         raceId: string,
         driverNumber: number,
@@ -72,13 +76,17 @@ export class Game {
         this.container = options.container;
         this.onSpeedUp = options.onSpeedUp;
         this.onBrake = options.onBrake;
-
-        new Track(options.trackSvg);
+        this.track = new Track(options.trackSvg);
 
         // Start render loop
         requestAnimationFrame(() => this.render());
 
         console.log(`Race ${this.raceId} initialized...`);
+    }
+
+    // @ts-ignore
+    getTrackPath(): Path {
+        return this.track.getPath()
     }
 
     addOrUpdateDriver(driverNum: number, data: SerializedDriverState) {
@@ -119,8 +127,8 @@ export class Game {
 
         this.started = true;
 
-        document.body.addEventListener('mousedown', this.speedUp.bind(this));
-        document.body.addEventListener('mouseup', this.brake.bind(this));
+        document.body.addEventListener('pointerdown', this.speedUp.bind(this));
+        document.body.addEventListener('pointerup', this.brake.bind(this));
     }
 
     getDriver(driverNumber: number): Driver | null {

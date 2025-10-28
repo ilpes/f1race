@@ -6,7 +6,7 @@ import {MAX_DRIVER_PER_RACE, RaceManager, RaceStatus} from "./RaceManager";
 class RacesService {
 
     private redis: Redis;
-    private locker: Redlock;
+    private locker: Redlock; 
 
     constructor(redis: Redis, locker: Redlock) {
         this.redis = redis;

@@ -2,6 +2,7 @@ import {io, Socket} from "socket.io-client";
 import {DriverData, RaceStatus} from "../types.ts";
 import * as paper from "paper";
 import {Game, GameState, RaceState} from "./game/Game.ts";
+import {PathExporter} from "./game/PathExporter.ts";
 
 type AppInterface = {
     game: Game,
@@ -19,6 +20,7 @@ type AppInterface = {
     onBrake: Function,
     onGameState: Function,
     onFinished: Function,
+    downloadTrackPath: Function,
 }
 
 const App = () => <AppInterface>({
@@ -35,6 +37,22 @@ const App = () => <AppInterface>({
 
         this.initSocket(raceId, driverNumber);
         this.initGame(raceId, driverNumber);
+    },
+
+    downloadTrackPath() {
+
+        const trackPath = this.game.getTrackPath();
+        const trackData = (new PathExporter()).extract(trackPath, 2000);
+
+        const blob = new Blob([trackData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'track.json';
+        a.click();
+
+        URL.revokeObjectURL(url);
     },
 
     initGame(raceId: string, driverNumber: number) {
