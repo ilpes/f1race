@@ -2,9 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8"/>
-    <link rel="icon" type="image/svg+xml" href="/vite.svg"/>
+    <link rel="icon" type="image/svg+xml" href="/icon.svg"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>F1 Racing</title>
+
+    <meta name="description" content="Go head-to-head live on F1 tracks">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,21 +14,28 @@
 </head>
 <body>
 
-    <main x-data="app">
-        <h1>
-            <img alt="F1 Race" src="/logo.svg"/>
-        </h1>
+    <main x-data="app" id="home">
+        <h1><img alt="F1 Race" src="/logo.svg"/></h1>
 
-        <p><span x-text="driversCount" x-show="driversCount"></span> Lorem ipsum dolor <strong>sit amet</strong>, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+        <div class="content">
+            <div class="copy">
+                <strong>Go head-to-head live on F1 tracks</strong>. <br />Race. Win. Repeat.
+            </div>
 
-        <nav>
-            <button x-data="nav" id="warm-up" @click="race">
-                <span>Race</span>
-            </button>
-<!--            <button id="race">-->
-<!--                <span>Race</span>-->
-<!--            </button>-->
-        </nav>
+            <nav>
+                <button x-data="nav" id="warm-up" @click="race">
+                    <span>Race</span>
+                </button>
+                <!--            <button id="race">-->
+                <!--                <span>Race</span>-->
+                <!--            </button>-->
+            </nav>
+
+            <p class="online"><span x-text="driversCount" x-show="driversCount || true">12</span> player online </p>
+        </div>
+
+
+        <footer>Made with ☕ by Pes</footer>
     </main>
 
     <script type="module" src="/src/home/index.ts"></script>

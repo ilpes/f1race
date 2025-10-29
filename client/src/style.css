@@ -17,6 +17,12 @@
     -moz-osx-font-smoothing: grayscale;
 }
 
+body {
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
 /*a {*/
 /*  font-weight: 500;*/
 /*  color: #646cff;*/
@@ -28,53 +34,65 @@
 
 main {
     position: relative;
-    margin: 0;
+    margin: auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 100%;
-    height: 100%;
-}
-
-div#container {
-    position: relative;
-    width: 327px;
-    height: 685px;
-    flex-shrink: 0;
-    /*display: flex;*/
-    /*align-items: center;*/
-    /*justify-content: center;*/
-    /*background-color: #171717;*/
-    /*max-width: 640px;*/
-    /*margin: 0 auto;*/
-    /*text-align: center;*/
-    /*padding: 10px;*/
-}
-
-img.car {
-    position: absolute;
-    width: 25px;
-    height: 26px;
-    top: -13px;
-    left: -12px;
-    pointer-events: none;
-    user-select: none;
-    backface-visibility: hidden;
-}
-
-canvas#track {
-    width: 327px;
-    height: 685px;
-}
-
-nav {
-    padding-top: 20px;
-    display: flex;
-    justify-content: center;
+    max-width: 768px;
     flex-direction: column;
-    align-items: center;
-    gap: 20px;
+    height: 100vh;
 }
+
+/*************
+ *** Home
+ *************/
+
+main#home {
+    div.copy {
+        padding: 12px;
+        text-align: center;
+        line-height: 1.8;
+        font-size: 14px;
+
+        strong {
+            font-size: 18px;
+        }
+    }
+
+    div.content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    nav {
+        padding-top: 20px;
+        display: flex;
+        justify-content: center;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        margin-top: 80px;
+    }
+
+    footer {
+        padding-bottom: 16px;
+        font-size: 10px;
+        font-weight: 900;
+        color: #52525b;
+        text-transform: uppercase;
+    }
+
+    p.online {
+        font-size: 12px;
+        font-weight: bold;
+    }
+}
+
+
+
+
 
 nav button {
     font-family: "Raleway", sans-serif;
@@ -101,6 +119,82 @@ nav button:hover {
 nav button span {
     transform: skew(21deg);
 }
+
+/*************
+ *** Race
+ *************/
+main#game {
+    justify-content: flex-start;
+
+    header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px;
+        font-size: 10px;
+        font-weight: 900;
+
+        div.track-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: uppercase;
+        }
+
+        span.waiting {
+            color: #505050;
+        }
+
+        span.ready {
+            /*color: #E41D1D;*/
+            text-transform: uppercase;
+            font-weight: 900;
+            font-size: 12px;
+        }
+
+        span.go {
+            color: #E41D1D;
+            text-transform: uppercase;
+            font-weight: 900;
+            font-size: 12px;
+        }
+
+        span.finished {
+            a {
+                color: #E41D1D;
+            }
+        }
+    }
+
+    div#race {
+        position: relative;
+        width: 327px;
+        height: 685px;
+        flex-shrink: 0;
+    }
+
+    img.car {
+        position: absolute;
+        width: 25px;
+        height: 26px;
+        top: -13px;
+        left: -12px;
+        pointer-events: none;
+        user-select: none;
+        backface-visibility: hidden;
+    }
+
+    canvas#track {
+        width: 327px;
+        height: 685px;
+    }
+}
+
+
+
+
 
 /*.logo:hover {*/
 /*  filter: drop-shadow(0 0 2em #646cffaa);*/

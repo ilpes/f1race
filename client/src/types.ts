@@ -19,7 +19,7 @@ export type DriverData = {
 // export type OnLapCompleted = (lap: number) => void;
 // export type MouseEventFunction = (this: HTMLElement, ev: MouseEvent) => void;
 
-export type RaceStatus = 'waiting' | 'starting' | 'started' | 'finished';
+export type RaceStatus = 'waiting' | 'starting' | 'start' | 'started' | 'finished';
 export type DriverType = 'auto' | 'manual';
 
 // export type DriverResult = {

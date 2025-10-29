@@ -9,6 +9,7 @@ type AppInterface = {
     raceId: string,
     position: number,
     socket: Socket,
+    status: RaceStatus | null,
     init: Function,
     initGame: Function,
     initSocket: Function,
@@ -28,6 +29,7 @@ const App = () => <AppInterface>({
     position: null,
     socket: null,
     game: null,
+    status: null,
 
     init() {
         const raceIdAndPosition = window.location.pathname.replace('/races/', '');
@@ -102,6 +104,7 @@ const App = () => <AppInterface>({
     },
 
     onDriverConnected(driverNumber: number, state: RaceState) {
+        this.status = state.status;
         //console.log(`Driver ${driverNumber} joined...`, state);
         this.game.driverJoined(driverNumber, state);
         //this.game.updateGameState(state)
@@ -113,16 +116,20 @@ const App = () => <AppInterface>({
     },
 
     onStarting() {
-        console.log('Starting...');
+        this.status = 'starting';
     },
 
     onFinished() {
-        console.log('Finished...');
+        this.status = 'finished';
     },
 
     onStart() {
-        console.log('Start...');
+        this.status = 'start';
         this.game.start();
+
+        setTimeout(() => {
+            this.status = null;
+        }, 3000);
     },
 
     initSocket(raceId: string, driverNumber: number) {
