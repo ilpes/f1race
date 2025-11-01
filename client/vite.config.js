@@ -11,5 +11,21 @@ export default defineConfig({
             }
         },
         sourcemap: true,
-    }
+    },
+    plugins: [
+        {
+            name: 'html-transform',
+            transformIndexHtml: {
+                order: 'pre',
+                handler(html) {
+                    return html.replace(
+                        /%ANALYTICS%/g,
+                        process.env.NODE_ENV === 'production'
+                            ? '<script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>'
+                            : ''
+                    )
+                }
+            }
+        }
+    ]
 });
