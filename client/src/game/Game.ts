@@ -198,12 +198,16 @@ export class Game {
         requestAnimationFrame(() => this.render());
     }
 
-    private speedUp(): void {
+    private speedUp(event: PointerEvent): void {
+        event.preventDefault()
+        event.stopPropagation()
         this.localInputSequence++;
         this.onSpeedUp(this.driverNumber, this.localInputSequence);
     }
 
-    private brake(): void {
+    private brake(event: PointerEvent): void {
+        event.preventDefault()
+        event.stopPropagation()
         this.localInputSequence++;
         this.onBrake(this.driverNumber, this.localInputSequence);
     }

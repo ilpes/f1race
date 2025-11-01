@@ -124,6 +124,7 @@ nav button, a.button {
     border: 0;
     outline: 0;
     background: #E41D1D;
+    color: #fff;
     transform: skew(-21deg);
     -webkit-box-shadow: 10px 10px 0 0 rgba(0, 0, 0, 0.6);
     box-shadow: 10px 10px 0 0 rgba(0, 0, 0, 0.6);
@@ -135,7 +136,16 @@ a.button span {
     display: block;
 }
 
-nav button:visited, nav  button:active,nav  button:hover, nav button:link, a.button:visited, a.button:active, a.button:hover, a.button:link {
+nav button,
+nav button:visited,
+nav button:active,
+nav button:hover,
+nav button:link,
+a.button,
+a.button:visited,
+a.button:active,
+a.button:hover,
+a.button:link {
     color: white;
 }
 
@@ -159,6 +169,7 @@ main#game {
     max-width: 768px;
     height:100%;
     min-height:100%;
+    user-select: none;
 
     header {
         display: flex;
