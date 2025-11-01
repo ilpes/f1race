@@ -232,6 +232,11 @@ main#game {
             text-transform: uppercase;
             font-weight: 900;
             font-size: 16px;
+            visibility: hidden;
+
+            @media (min-width:650px) {
+                visibility: visible;
+            }
         }
 
         span.finished {
