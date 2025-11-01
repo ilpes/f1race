@@ -1,55 +1,14 @@
 import {Track} from "./Track.ts";
-import {RaceStatus} from "../../types.ts";
 import {Driver} from "./Driver.ts";
 import CarImage from "./assets/car.png";
 // @ts-ignore
 import {Path} from "paper";
-
-
-export interface RaceState {
-    state: GameState;
-    status: RaceStatus;
-    driverCount: number;
-}
-
-export interface SerializedDriverState {
-    x: number,
-    y: number,
-    rotation: number,
-    distance: number,
-    laps: number,
-    velocity: number,
-    isSpeedingUp: boolean,
-    onTrack: boolean,
-    finished: boolean
-}
-
-export interface GameState {
-    drivers: {[driverNumber: string]: SerializedDriverState};
-    serverTime: number;
-    tickNumber: number;
-}
-
-// export interface GameState {
-//     drivers: {
-//         [driverId: number]: {
-//             x: number;
-//             y: number;
-//             rotation: number;
-//             distance: number;
-//             laps: number;
-//             isSpeedingUp: boolean;
-//         };
-//     };
-//     serverTime: number;
-//     tickNumber: number;
-// }
+import {GameState, RaceState, SerializedDriverState} from "../types.ts";
 
 export class Game {
     private readonly raceId: string;
     private drivers: Map<number, Driver> = new Map();
     private readonly driverNumber: number;
-    //private track: Track;
     private readonly container: HTMLElement;
     private readonly onSpeedUp: Function;
     private readonly onBrake: Function;
@@ -82,6 +41,10 @@ export class Game {
         requestAnimationFrame(() => this.render());
 
         console.log(`Race ${this.raceId} initialized...`);
+    }
+
+    getDriverNumber(): number {
+        return this.driverNumber;
     }
 
     // @ts-ignore

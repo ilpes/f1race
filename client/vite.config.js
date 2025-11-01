@@ -6,7 +6,8 @@ export default defineConfig({
         rollupOptions: {
             input: {
                 index: resolve(__dirname, 'home.html'),
-                race: resolve(__dirname, 'race.html')
+                race: resolve(__dirname, 'race.html'),
+                warmup: resolve(__dirname, 'warmup.html')
             }
         },
         sourcemap: true,

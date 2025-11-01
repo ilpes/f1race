@@ -1,49 +1,6 @@
 import {Path, Point, TrackData} from './physics';
-import {LAPS_PER_RACE} from "./RaceManager";
-
-export interface Position {
-    point: Point;
-    speed: Point;
-    angle: number;
-    distance: number;
-}
-
-export interface DriverState {
-    position: Position;
-    laps: number;
-    isSpeedingUp: boolean;
-    onTrack: boolean;
-    crashPosition: Position | null;
-    crashPath: Path | null;
-    crashRotation: number;
-    finished: boolean;
-    connected: boolean;
-}
-
-export interface PlayerInput {
-    driverNumber: number;
-    action: 'speed-up' | 'brake';
-    sequence: number;
-    timestamp: number;
-}
-
-export interface SerializedDriverState {
-    x: number,
-    y: number,
-    rotation: number,
-    distance: number,
-    laps: number,
-    velocity: number,
-    isSpeedingUp: boolean,
-    onTrack: boolean,
-    finished: boolean
-}
-
-export interface GameState {
-    drivers: { [driverNumber: string]: SerializedDriverState };
-    serverTime: number;
-    tickNumber: number;
-}
+import {DriverState, GameState, PlayerInput, Position, SerializedDriverState} from "../types";
+import {LAPS_PER_RACE} from "../constants";
 
 const MAX_SPEED = 25;
 const FRICTION = 0.9;

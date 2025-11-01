@@ -1,6 +1,6 @@
 import Path = paper.Path;
 
-export interface PathPoint {
+interface PathPoint {
     x: number;
     y: number;
     angle: number;
@@ -23,7 +23,7 @@ export interface PathPoint {
     offset: number;
 }
 
-export interface TrackData {
+interface TrackData {
     points: PathPoint[];
     length: number;
     name: string;
@@ -93,7 +93,7 @@ export class PathExporter {
                 width: path.bounds.width,
                 height: path.bounds.height
             }
-        }, null, 2);
+        } as TrackData, null, 2);
     }
 
     // /**

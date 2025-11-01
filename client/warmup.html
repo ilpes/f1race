@@ -17,17 +17,10 @@
 <main x-data="app" id="game">
     <header>
         <div class="info">
-            <span class="waiting" x-show="status === 'waiting'"
-                  x-cloak
-                  x-transition:enter.duration.200ms
-                  x-transition:leave.duration.50ms
-            >Waiting on the grid...</span>
-
             <span class="ready" x-show="status === 'starting'"
                   x-cloak
                   x-transition:enter.duration.200ms
                   x-transition:leave.duration.50ms
-                  x-transition:enter.delay.50ms
             >Ready?</span>
 
 <!--            <span class="finished" x-show="status === 'finished'"-->
@@ -61,7 +54,6 @@
             </svg>
         </div>
     </header>
-
 
     <div id="race" x-ref="container" x-show="!result">
         <canvas id="track" x-ref="track"></canvas>
@@ -106,6 +98,6 @@
 <!--    <button @click="downloadTrackPath">Download</button>-->
 </main>
 
-<script type="module" src="/src/race/index.ts"></script>
+<script type="module" src="/src/warmup/index.ts"></script>
 </body>
 </html>

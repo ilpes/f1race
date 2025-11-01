@@ -4,7 +4,7 @@
     <meta charset="UTF-8"/>
     <link rel="icon" type="image/svg+xml" href="/icon.svg"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>F1 Racing</title>
+    <title>RaceOff | Go head-to-head live on F1 tracks</title>
 
     <meta name="description" content="Go head-to-head live on F1 tracks">
 
@@ -22,20 +22,28 @@
                 <strong>Go head-to-head live on F1 tracks</strong>. <br />Race. Win. Repeat.
             </div>
 
-            <nav>
-                <button x-data="nav" id="warm-up" @click="race">
+            <nav x-data="nav" >
+                <button id="warm-up" @click="warmup">
+                    <span>WarmUp</span>
+                </button>
+                <button id="race" @click="race">
                     <span>Race</span>
                 </button>
-                <!--            <button id="race">-->
-                <!--                <span>Race</span>-->
-                <!--            </button>-->
             </nav>
 
-            <p class="online"><span x-text="driversCount" x-show="driversCount || true">12</span> player online </p>
+            <p class="online"  x-show="driversCount > 0"><span x-text="driversCount"></span> player online </p>
         </div>
 
 
-        <footer>Made with ☕ by Pes</footer>
+        <footer>
+            <a href="https://ilpes.it" target="_blank">
+                Made with
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="12">
+                    <path d="m9.653 16.915-.005-.003-.019-.01a20.759 20.759 0 0 1-1.162-.682 22.045 22.045 0 0 1-2.582-1.9C4.045 12.733 2 10.352 2 7.5a4.5 4.5 0 0 1 8-2.828A4.5 4.5 0 0 1 18 7.5c0 2.852-2.044 5.233-3.885 6.82a22.049 22.049 0 0 1-3.744 2.582l-.019.01-.005.003h-.002a.739.739 0 0 1-.69.001l-.002-.001Z" />
+                </svg>
+                by Pes
+            </a>
+        </footer>
     </main>
 
     <script type="module" src="/src/home/index.ts"></script>

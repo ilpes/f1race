@@ -17,22 +17,23 @@
     -moz-osx-font-smoothing: grayscale;
 }
 
-body {
+[x-cloak] { display: none !important; }
+
+body, html {
     margin: 0;
     padding: 0;
     border: 0;
+    height: 100%;
+    min-height: 100%;
+    overflow-x: hidden;
 }
 
-/*a {*/
-/*  font-weight: 500;*/
-/*  color: #646cff;*/
-/*  text-decoration: inherit;*/
-/*}*/
-/*a:hover {*/
-/*  color: #535bf2;*/
-/*}*/
 
-main {
+/*************
+ *** Home
+ *************/
+
+main#home {
     position: relative;
     margin: auto;
     display: flex;
@@ -40,14 +41,9 @@ main {
     justify-content: center;
     max-width: 768px;
     flex-direction: column;
-    height: 100vh;
-}
+    height:100%;
+    min-height:100%;
 
-/*************
- *** Home
- *************/
-
-main#home {
     div.copy {
         padding: 12px;
         text-align: center;
@@ -78,10 +74,31 @@ main#home {
 
     footer {
         padding-bottom: 16px;
-        font-size: 10px;
-        font-weight: 900;
-        color: #52525b;
-        text-transform: uppercase;
+
+
+        a, a:visited {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            color: #505050;
+            text-transform: uppercase;
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-decoration: none;
+        }
+        svg {
+            display: inline-flex;
+            fill: #E41D1D;
+        }
+
+        a:hover {
+            color: #E41D1D;
+
+            svg {
+                fill: white;
+            }
+        }
     }
 
     p.online {
@@ -94,9 +111,11 @@ main#home {
 
 
 
-nav button {
+nav button, a.button {
+    display: block;
     font-family: "Raleway", sans-serif;
     text-transform: uppercase;
+    font-style: normal;
     font-size: 32px;
     font-weight: 900;
     padding: 10px;
@@ -108,15 +127,25 @@ nav button {
     transform: skew(-21deg);
     -webkit-box-shadow: 10px 10px 0 0 rgba(0, 0, 0, 0.6);
     box-shadow: 10px 10px 0 0 rgba(0, 0, 0, 0.6);
+    cursor: pointer;
+    text-align: center;
 }
 
-nav button:hover {
+a.button span {
+    display: block;
+}
+
+nav button:visited, nav  button:active,nav  button:hover, nav button:link, a.button:visited, a.button:active, a.button:hover, a.button:link {
+    color: white;
+}
+
+nav button:hover, a.button:hover {
     transform: translate(5px, 5px) skew(-21deg);
     -webkit-box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.6);
     box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.6);
 }
 
-nav button span {
+nav button span, a.button span {
     transform: skew(21deg);
 }
 
@@ -124,22 +153,55 @@ nav button span {
  *** Race
  *************/
 main#game {
-    justify-content: flex-start;
+    display: block;
+    position: relative;
+    margin: auto;
+    max-width: 768px;
+    height:100%;
+    min-height:100%;
 
     header {
         display: flex;
         justify-content: space-between;
-        align-items: center;
+        align-items: flex-start;
         width: 100%;
         box-sizing: border-box;
-        padding: 8px;
-        font-size: 10px;
+        padding: 16px 8px 0 8px;
+        font-size: 12px;
         font-weight: 900;
+        max-width: 768px;
+        position: fixed;
+        top: 0;
+        height: 50px;
+
+        div.info {
+            padding-left: 3px;
+            line-height: 1;
+        }
+
+        div.dashboard {
+            font-size: 16px;
+            div {
+                display: flex;
+                align-items: flex-end;
+                width: 200px;
+                gap: 20px;
+                margin-bottom: 6px;
+            }
+
+            span.label {
+                font-size: 10px;
+                text-transform: uppercase;
+                font-weight: 900;
+                color: #E41D1D;
+                width: 25px;
+            }
+        }
 
         div.track-name {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 12px;
             text-transform: uppercase;
         }
 
@@ -151,14 +213,14 @@ main#game {
             /*color: #E41D1D;*/
             text-transform: uppercase;
             font-weight: 900;
-            font-size: 12px;
+            font-size: 14px;
         }
 
         span.go {
             color: #E41D1D;
             text-transform: uppercase;
             font-weight: 900;
-            font-size: 12px;
+            font-size: 16px;
         }
 
         span.finished {
@@ -172,7 +234,62 @@ main#game {
         position: relative;
         width: 327px;
         height: 685px;
-        flex-shrink: 0;
+        margin: auto;
+        transform: translate3d(0, 50px, 0);
+        transform-origin: 50% 50%;
+    }
+
+    div#result {
+        position: relative;
+        width: 327px;
+        height: 685px;
+        margin: auto;
+        display: flex;
+        transform: translate3d(0, 150px, 0);
+        align-items: center;
+        justify-content: start;
+        flex-direction: column;
+
+        h2 {
+            font-size: 48px;
+            font-weight: 900;
+            text-transform: uppercase;
+            line-height: 1;
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        div.data {
+            margin-top: 20px;
+            margin-bottom: 60px;
+        }
+
+        div.data div {
+            display: flex;
+        }
+
+        div.data div span {
+            width: 100px;
+            color: #505050;
+            text-transform: uppercase;
+            font-weight: 900;
+            font-size: 14px;
+        }
+
+        div.data div small {
+            text-transform: uppercase;
+            font-weight: 900;
+            font-size: 14px;
+            color: white;
+        }
+    }
+
+    @media (min-width:650px) {
+        div#race {
+            margin: 0 auto;
+            transform: rotate3d( 0, 0, 1, 35deg) translate3d(0, 50px, 0);
+        }
     }
 
     img.car {
@@ -191,54 +308,3 @@ main#game {
         height: 685px;
     }
 }
-
-
-
-
-
-/*.logo:hover {*/
-/*  filter: drop-shadow(0 0 2em #646cffaa);*/
-/*}*/
-/*.logo.vanilla:hover {*/
-/*  filter: drop-shadow(0 0 2em #3178c6aa);*/
-/*}*/
-
-/*.card {*/
-/*  padding: 2em;*/
-/*}*/
-
-/*.read-the-docs {*/
-/*  color: #888;*/
-/*}*/
-
-/*button {*/
-/*  border-radius: 8px;*/
-/*  border: 1px solid transparent;*/
-/*  padding: 0.6em 1.2em;*/
-/*  font-size: 1em;*/
-/*  font-weight: 500;*/
-/*  font-family: inherit;*/
-/*  background-color: #1a1a1a;*/
-/*  cursor: pointer;*/
-/*  transition: border-color 0.25s;*/
-/*}*/
-/*button:hover {*/
-/*  border-color: #646cff;*/
-/*}*/
-/*button:focus,*/
-/*button:focus-visible {*/
-/*  outline: 4px auto -webkit-focus-ring-color;*/
-/*}*/
-
-/*@media (prefers-color-scheme: light) {*/
-/*  :root {*/
-/*    color: #213547;*/
-/*    background-color: #ffffff;*/
-/*  }*/
-/*  a:hover {*/
-/*    color: #747bff;*/
-/*  }*/
-/*  button {*/
-/*    background-color: #f9f9f9;*/
-/*  }*/
-/*}*/

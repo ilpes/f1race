@@ -3,31 +3,12 @@
  * Manages multiple concurrent races, each with their own game loop
  */
 
-import {GameEngine, GameState, PlayerInput} from './GameEngine';
 import {TrackData} from "./physics";
 import {Race} from "./Race";
-
-export const MAX_DRIVER_PER_RACE = 2;
-export const LAPS_PER_RACE = 2;
-
-export interface RaceConfig {
-    raceId: string;
-    trackData: TrackData;
-    maxDrivers: number;
-}
-
-export interface RaceState {
-    state: GameState;
-    status: RaceStatus;
-    driverCount: number;
-}
-
-export type DriverStatus = 'connected' | 'disconnected';
-export type RaceStatus = 'waiting' | 'starting' | 'started' | 'finished';
+import {GameState, PlayerInput, RaceState} from "../types";
+import {LAPS_PER_RACE} from "../constants";
 
 export class RaceManager {
-
-
     private races: Map<string, Race> = new Map();
     private readonly trackData: TrackData;
 
@@ -42,18 +23,19 @@ export class RaceManager {
         maxDrivers: number,
         onStateUpdate: (raceId: string, state: GameState) => void,
         onFinished: (raceId: string, time: number) => void,
+        onDriverFinished: (raceId: string, driverNumber: number, time: number) => void,
     ): Race {
         if (this.races.has(raceId)) {
             return this.races.get(raceId)!;
         }
 
         const race = new Race(
-            {raceId: raceId, trackData: this.trackData, maxDrivers: maxDrivers},
+            {raceId: raceId, trackData: this.trackData, maxDrivers: maxDrivers, type: 'race' },
             (state) => {
                 onStateUpdate(raceId, state);
             },
             (driverNumber: number, time: number) => {
-                console.log(`Driver ${driverNumber} finished at ${time}`);
+                onDriverFinished(raceId, driverNumber, time);
             },
             (time: number) => {
                 onFinished(raceId, time);
@@ -117,6 +99,10 @@ export class RaceManager {
             state: race.gameEngine.serializeGameState(),
             status: race.getStatus(),
             driverCount: race.getDriverCount(),
+            startedAt: race.getStartedAt(),
+            finishedAt: race.getFinishedAt(),
+            laps: LAPS_PER_RACE,
+            result: race.getResult(),
         };
     }
 

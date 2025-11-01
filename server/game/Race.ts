@@ -1,20 +1,19 @@
-import {GameEngine, GameState, PlayerInput} from "./GameEngine";
-import {DriverStatus, RaceConfig, RaceStatus} from "./RaceManager";
+import {GameEngine} from "./GameEngine";
 import {clearInterval} from "node:timers";
+import {GameState, PlayerInput, RaceConfig, RaceResult, RaceStatus} from "../types";
 
 const TICK_RATE = 60; // 60 ticks per second
 const TICK_INTERVAL = 1000 / TICK_RATE;
 
-export const LAPS_PER_RACE = 1;
-
 export class Race {
+
     public raceId: string;
     public gameEngine: GameEngine;
     private intervalId: NodeJS.Timeout | null = null;
     private readonly onStateUpdate: (state: GameState) => void;
     private readonly maxDrivers: number;
     private drivers: Map<number, number | null> = new Map();
-    private status: RaceStatus = 'waiting';
+    private status: RaceStatus;
     private startedAt: number | null = null;
     private finishedAt: number | null = null;
     private readonly onRaceFinished: (time: number) => void;
@@ -34,9 +33,45 @@ export class Race {
                 onDriverFinished(driverNumber, now)
             });
 
+        this.status = 'waiting';
         this.onRaceFinished = onRaceFinished;
         this.onStateUpdate = onStateUpdate;
         this.maxDrivers = config.maxDrivers;
+    }
+
+    getResult(): RaceResult | null {
+        if (this.status !== 'finished') {
+            return null;
+        }
+
+        let result: RaceResult = {}
+        let sortedDrivers: Array<[string, number]> = [];
+
+        // First pass: collect all valid drivers and sort by time
+        for (const [key, value] of this.drivers) {
+            if (value === null) {
+                return null;
+            }
+            sortedDrivers.push([String(key), value]);
+        }
+
+        // Sort by time (ascending - lowest time wins)
+        sortedDrivers.sort((a, b) => a[1] - b[1]);
+
+        // Get the winning time (fastest time)
+        const winningTime = sortedDrivers[0][1];
+
+        // Second pass: build the result with position and distance
+        for (let i = 0; i < sortedDrivers.length; i++) {
+            const [driverNumber, time] = sortedDrivers[i];
+            result[driverNumber] = {
+                time: time,
+                distance: i === 0 ? null : time - winningTime,
+                position: i + 1
+            };
+        }
+
+        return result;
     }
 
     // Add a driver to this race
@@ -49,11 +84,6 @@ export class Race {
         this.drivers.set(driverNumber, null);
         this.gameEngine.addDriver(driverNumber);
         console.log(`Driver ${driverNumber} added to race ${this.raceId}`);
-        //
-        // // Auto-start if we have enough drivers
-        // if (this.drivers.size >= 2 && !this.isRunning()) {
-        //     setTimeout(() => this.start(), 3000); // 3 second countdown
-        // }
     }
 
     connectDriver(driverNumber: number): void {
@@ -109,7 +139,7 @@ export class Race {
         this.onStateUpdate(serialized);
 
         if (this.finished()) {
-           this.finish();
+            this.finish();
         }
     }
 

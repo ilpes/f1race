@@ -1,10 +1,10 @@
 import {io, Socket} from "socket.io-client";
-import {DriverData, GameState, RaceResult, RaceState, RaceStatus, ReadableResult} from "../types.ts";
 import * as paper from "paper";
 import {Game} from "../game/Game.ts";
 import {PathExporter} from "../game/PathExporter.ts";
-import dayjs from "dayjs";
-import duration from "dayjs/plugin/duration";
+import dayjs from 'dayjs';
+import duration from 'dayjs/plugin/duration';
+import {RaceStatus, GameState, RaceState, RaceResult, ReadableResult} from "../types.ts";
 
 type AppInterface = {
     game: Game,
@@ -36,7 +36,7 @@ type AppInterface = {
     formatTime: Function,
 }
 
-const App = () => <AppInterface>({
+const App = (): AppInterface => ({
     raceId: null,
     socket: null,
     game: null,
@@ -50,19 +50,14 @@ const App = () => <AppInterface>({
     result: null,
 
     init() {
-        const raceIdAndPosition = window.location.pathname.replace('/races/', '');
-        const lastIndex = raceIdAndPosition.lastIndexOf('-');
-        const raceId = raceIdAndPosition.slice(0, lastIndex);
-        const driverNumber = parseInt(raceIdAndPosition.slice(lastIndex + 1));
-
-        this.initSocket(raceId, driverNumber);
-        this.initGame(raceId, driverNumber);
+        const raceId = window.location.pathname.replace('/warmups/', '');
+        this.initSocket(raceId);
+        this.initGame(raceId);
 
         dayjs.extend(duration);
     },
 
     downloadTrackPath() {
-
         const trackPath = this.game.getTrackPath();
         const trackData = (new PathExporter()).extract(trackPath, 2000);
 
@@ -77,7 +72,7 @@ const App = () => <AppInterface>({
         URL.revokeObjectURL(url);
     },
 
-    initGame(raceId: string, driverNumber: number) {
+    initGame(raceId: string) {
         // @ts-ignore
         const container: HTMLElement = this.$refs.container;
         // @ts-ignore
@@ -89,7 +84,7 @@ const App = () => <AppInterface>({
 
         this.game = new Game({
             raceId: raceId,
-            driverNumber: driverNumber,
+            driverNumber: 1,
             document: document,
             container: container,
             trackSvg: trackSvg,
@@ -118,16 +113,17 @@ const App = () => <AppInterface>({
         });
     },
 
-    onDriverDisconnected(driverNumber: number) {
-        console.log(`Driver ${driverNumber} got disconnected...`);
+    onDriverDisconnected() {
+        console.log(`Driver got disconnected...`);
     },
 
-    onDriverConnected(driverNumber: number, state: RaceState) {
+    onDriverConnected(state: RaceState) {
+        console.log(`Driver connected with state: ${JSON.stringify(state)}`);
         this.status = state.status;
-        this.game.driverJoined(driverNumber, state);
+        this.game.driverJoined(1, state);
 
         this.laps = state.laps;
-        this.setCurrentLap(state.state);
+        this.setCurrentLap(state.state)
 
         if (state.status === 'started') {
             this.startTimerAt(state.state.serverTime - state.startedAt);
@@ -207,15 +203,14 @@ const App = () => <AppInterface>({
         }, 3000);
     },
 
-    initSocket(raceId: string, driverNumber: number) {
-
-        this.socket = io("/races", {autoConnect: false, transports: ["websocket"]});
-        this.socket.auth = {raceId, driverNumber};
+    initSocket(warmupId: string) {
+        this.socket = io("/warmups", {autoConnect: false, transports: ["websocket"]});
+        this.socket.auth = {warmupId};
         this.socket.connect();
 
-        this.socket.on('driver-connected', (driverNumber: number, drivers: DriverData[], status: RaceStatus, state: GameState) =>
-            this.onDriverConnected(driverNumber, drivers, status, state));
-        this.socket.on('driver-disconnected', (driverNumber: number) => this.onDriverDisconnected(driverNumber));
+        this.socket.on('driver-connected', (state: RaceState) =>
+            this.onDriverConnected(state));
+        this.socket.on('driver-disconnected', () => this.onDriverDisconnected());
 
         this.socket.on('game-state', (state: GameState) => this.onGameState(state));
         this.socket.on('starting', () => this.onStarting());

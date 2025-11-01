@@ -1,10 +1,10 @@
 import Redis from "ioredis";
 import Redlock from "redlock";
-import {MAX_DRIVER_PER_RACE, RaceManager, RaceStatus} from "./RaceManager";
+import {RaceResult, RaceStatus} from "../types";
+import {MAX_DRIVER_PER_RACE} from "../constants";
 
 
 class RacesService {
-
     private redis: Redis;
     private locker: Redlock;
 
@@ -22,6 +22,15 @@ class RacesService {
         return status as RaceStatus;
     }
 
+    async startedAt(raceId: string): Promise<number> {
+        const startedAt = await this.redis.hget(`races:${raceId}`, 'started_at');
+        if (startedAt === null) {
+            throw new Error('Unable to get started at...');
+        }
+
+        return Number(startedAt);
+    }
+
     async start(raceId: string, startedAt: number): Promise<void> {
         await this.redis.hset(`races:${raceId}`, {
             'status': 'started',
@@ -29,71 +38,69 @@ class RacesService {
         });
     }
 
-    async finish(raceId: string, finishedAt: number): Promise<void> {
+    async finish(raceId: string, finishedAt: number): Promise<RaceResult> {
         await this.redis.hset(`races:${raceId}`, {
             'status': 'finished',
             'finished_at': finishedAt,
         });
+
+        return await this.result(raceId);
     }
 
-    // async finish(raceId: string, sessionId: string): Promise<DriverData> {
-    //
-    //     const startedAt = await this.redis.hget(`races:${raceId}`, 'started_at');
-    //     const startTime: number | null = startedAt ? parseInt(startedAt) : null;
-    //
-    //     if (startTime === null) {
-    //         throw new Error('Something is off here...');
-    //     }
-    //
-    //     const now = Date.now();
-    //
-    //     const position = await this.position(raceId, sessionId);
-    //     if (position === null) {
-    //         throw new Error('Unable to get position...');
-    //     }
-    //
-    //     const driversList = await this.driversList(raceId);
-    //     const otherDriversList = filter(driversList, (driverData: DriverData) => driverData.position !== position);
-    //
-    //     const finishers = filter(otherDriversList, (driverData: DriverData) => driverData.result !== null);
-    //     const driversLeft = filter(otherDriversList, (driverData: DriverData) => driverData.result === null && driverData.status === 'connected');
-    //
-    //     const driversLeftCount: number = driversLeft.length;
-    //     const finishersCount = finishers.length;
-    //     const finalPosition = finishersCount + 1;
-    //
-    //     await this.redis.hset(`races:${raceId}:drivers:${sessionId}`, {
-    //         'finished_in': now - startTime,
-    //         'position': finalPosition,
-    //     });
-    //
-    //     // If this was the last driver OR all the remaining ones are disconnected
-    //     // then finish the race
-    //     const shouldFinish = (finishersCount === (MAX_DRIVER_PER_RACE - 1)) || driversLeftCount === 0;
-    //
-    //     if (shouldFinish) {
-    //         await this.redis.hset(`races:${raceId}`, {
-    //             'status': 'finished',
-    //             'finished_at': now,
-    //         });
-    //     }
-    //
-    //     return {
-    //         position: position,
-    //         status: 'connected' as DriverStatus,
-    //         data: null, // No need here to send the data...
-    //         result: {
-    //             position: finalPosition,
-    //             time: now - startTime,
-    //         }
-    //     };
-    // }
+    async saveResult(raceId: string, driverNumber: number, time: number) {
+        await this.redis.hset(`races:${raceId}:results:${driverNumber}`, {
+            'finished_at': time,
+        });
+    }
+
+    async driverResult(raceId: string, driverNumber: number): Promise<number> {
+        const finishedAt = await this.redis.hget(`races:${raceId}:results:${driverNumber}`, 'finished_at');
+        if (finishedAt === null) {
+            throw new Error('Unable to get finished at...');
+        }
+
+        return Number(finishedAt);
+    }
+
+    async result(raceId: string): Promise<RaceResult> {
+        const startedAt = await this.startedAt(raceId);
+        const driversCount = await this.driversCount(raceId);
+        let sortedDrivers: Array<[string, number]> = [];
+
+        console.log(raceId, startedAt, driversCount);
+
+        // First pass: collect all driver times
+        for (let i = 1; i <= driversCount; i++) {
+            const driverFinishedAt = await this.driverResult(raceId, i);
+            const time = driverFinishedAt - startedAt;
+            sortedDrivers.push([String(i), time]);
+        }
+
+        // Sort by time (ascending - lowest time wins)
+        sortedDrivers.sort((a, b) => a[1] - b[1]);
+
+        // Get the winning time (fastest time)
+        const winningTime = sortedDrivers[0][1];
+
+        // Second pass: build the result with position and distance
+        let result: RaceResult = {};
+        for (let i = 0; i < sortedDrivers.length; i++) {
+            const [driverNumber, time] = sortedDrivers[i];
+            result[driverNumber] = {
+                time: time,
+                distance: i === 0 ? null : time - winningTime,
+                position: i + 1
+            };
+        }
+
+        return result;
+    }
 
     async create(sessionId: string) {
-        const position = 1;
+        const driverNumber = 1;
         const lastRaceId = crypto.randomUUID();
         await this.redis.set(`race`, lastRaceId);
-        await this.redis.zadd(`races:${lastRaceId}:drivers`, position, sessionId);
+        await this.redis.zadd(`races:${lastRaceId}:drivers`, driverNumber, sessionId);
         // await this.redis.expire(`races.${lastRaceId}:drivers`, 86400);
         await this.redis.hset(`races:${lastRaceId}`, {
             'circuit': 'Monza',
@@ -101,12 +108,12 @@ class RacesService {
         });
         // await this.redis.expire(`races:${lastRaceId}`, 86400);
 
-        return `${lastRaceId}-${position}`;
+        return `${lastRaceId}-${driverNumber}`;
     }
 
-    async position(raceId: string, sessionId: string): Promise<number|null> {
-        const position = await this.redis.zscore(`races:${raceId}:drivers`, sessionId);
-        return position === null ? null : parseInt(position);
+    async driverNumber(raceId: string, sessionId: string): Promise<number|null> {
+        const driverNumber = await this.redis.zscore(`races:${raceId}:drivers`, sessionId);
+        return driverNumber === null ? null : parseInt(driverNumber);
     }
 
     async current(): Promise<string | null> {
@@ -122,17 +129,17 @@ class RacesService {
         }
     }
 
-    async hasJoinedAtPosition(raceId: string, sessionId: string, position: number): Promise<boolean> {
-        const driverPosition = await this.position(raceId, sessionId);
-        return driverPosition === position;
+    async hasJoinedWithNumber(raceId: string, sessionId: string, num: number): Promise<boolean> {
+        const driverNumber = await this.driverNumber(raceId, sessionId);
+        return driverNumber === num;
     }
 
     async driversCount(raceId: string): Promise<number> {
         return this.redis.zcard(`races:${raceId}:drivers`);
     }
 
-    async join(raceId: string, sessionId: string, position: number): Promise<void> {
-        await this.redis.zadd(`races:${raceId}:drivers`, position, sessionId);
+    async join(raceId: string, sessionId: string, driverNumber: number): Promise<void> {
+        await this.redis.zadd(`races:${raceId}:drivers`, driverNumber, sessionId);
     }
 
     async race(sessionId: string) {
@@ -152,20 +159,20 @@ class RacesService {
             }
 
 
-            // If position is null, he is not part of the race
-            let position = await this.position(lastRaceId, sessionId);
-            if (position !== null) {
-                // get the position
-                return `${lastRaceId}-${position}`;
+            // If driverNumber is null, he is not part of the race
+            let driverNumber = await this.driverNumber(lastRaceId, sessionId);
+            if (driverNumber !== null) {
+                // get the driverNumber
+                return `${lastRaceId}-${driverNumber}`;
             }
 
             // If not, let's add it to the current race
             let driversCount : number = await this.driversCount(lastRaceId);
             if (driversCount < MAX_DRIVER_PER_RACE) {
-                const position = driversCount + 1;
+                const driverNumber = driversCount + 1;
 
-                await this.join(lastRaceId, sessionId, position)
-                return `${lastRaceId}-${position}`;
+                await this.join(lastRaceId, sessionId, driverNumber)
+                return `${lastRaceId}-${driverNumber}`;
             }
 
             // Create a new race if the current one is full...
