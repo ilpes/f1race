@@ -305,12 +305,12 @@ main#game {
         }
     }
 
-    @media (min-width:650px) {
-        div#race {
-            margin: 0 auto;
-            transform: rotate3d( 0, 0, 1, 35deg) translate3d(0, 50px, 0);
-        }
-    }
+    /*@media (min-width:650px) {*/
+    /*    div#race {*/
+    /*        margin: 0 auto;*/
+    /*        transform: rotate3d( 0, 0, 1, 35deg) translate3d(0, 50px, 0);*/
+    /*    }*/
+    /*}*/
 
     img.car {
         position: absolute;
