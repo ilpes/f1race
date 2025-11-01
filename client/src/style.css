@@ -212,8 +212,17 @@ main#game {
         div.track-name {
             display: flex;
             align-items: center;
+            font-size: 10px;
             gap: 12px;
             text-transform: uppercase;
+            visibility: hidden;
+            scale: 0;
+
+
+            @media (min-width:650px) {
+                visibility: visible;
+                scale: 1;
+            }
         }
 
         span.waiting {
@@ -232,11 +241,6 @@ main#game {
             text-transform: uppercase;
             font-weight: 900;
             font-size: 16px;
-            visibility: hidden;
-
-            @media (min-width:650px) {
-                visibility: visible;
-            }
         }
 
         span.finished {
